@@ -1,0 +1,21 @@
+<!--  -->
+<!--  ->
+<html>
+<head>
+<title>Ðîòàöèîííûé âèñêîçèìåòð</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+</head>
+<body bgColor="#666666">
+<object classid="clsid:166B1BCA-3F9C-11CF-8075-444553540000"
+ codebase="http://download.macromedia.com/pub/shockwave/cabs/director/sw.cab#version=8,5,1,0"
+ id=Lab9 width=100% height=100% >
+<param name=src value="Lab9.lab">
+<param name=swRemote value="swSaveEnabled='false' swVolume='false' swRestart='true' swPausePlay='true' swFastForward='true' swContextMenu='false' ">
+<param name=swStretchStyle value=fill>
+<PARAM NAME=bgColor VALUE=#666666> <PARAM NAME=logo VALUE=FALSE> 
+<embed src="Lab9.lab" bgColor=#666666 logo=FALSE  width=100% height=100% swRemote="swSaveEnabled='false' swVolume='false' swRestart='true' swPausePlay='true' swFastForward='true' swContextMenu='false' " swStretchStyle=fill
+ type="application/x-director" pluginspage="http://www.macromedia.com/shockwave/download/">
+</embed>
+</object>
+</body>
+</html>

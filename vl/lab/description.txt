@@ -1,0 +1,39 @@
+Navigation:
+
+
+moving:
+
+		^
+		|   - up arrow button on keyboard 	- move forward
+		
+
+		|
+		v   - down arrow button on keyboard 	- move backward
+
+
+
+		<-  - left arrow button on keyboard	- strafe left (shift left, move left)
+
+
+		->  - right arrow button on keyboard	- strafe right (shift right, move right)
+
+
+rotation:
+
+		rotate camera left	-	click left mouse button and keeping it pressed drag to the left part of a screen
+		rotate camera right	-	click left mouse button and keeping it pressed drag to the right part of a screen
+		rotate camera up	- 	click left mouse button and keeping it pressed drag to the top part of a screen
+		rotate camera down	- 	click left mouse button and keeping it pressed drag to the bottom part of a screen
+
+
+
+History and Theory:
+The characteristic example of motion of body with variable mass is motion of jet-projectile (rockets) under the action of outflowing gases from an engine. Interest to such kind devices rose in the last century in connection with possibility of these devices to achieve space speeds up to 10 km/s.
+
+Jet propulsion is based on a law of saving of impulse and the theory of motion of body with variable mass.
+
+Principle of rocket acceleration is simple. Gases, outflowing from an engine, take away some impulse.The rocket with rest of fuel gets the same impulse, being together with gases the closed system. It is assumed that external forces are not present.
+
+
+
+Expirement description:

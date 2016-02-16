@@ -1,0 +1,21 @@
+<!--  -->
+<!--  ->
+<html>
+<head>
+<title>tr</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+</head>
+<body bgColor="#5478A0">
+<object classid="clsid:166B1BCA-3F9C-11CF-8075-444553540000"
+ codebase="http://download.macromedia.com/pub/shockwave/cabs/director/sw.cab#version=8,5,1,0"
+ id=tr width=100% height=100% >
+<param name=src value="tr.dcr">
+<param name=swRemote value="swSaveEnabled='true' swVolume='true' swRestart='true' swPausePlay='true' swFastForward='true' swContextMenu='false' ">
+<param name=swStretchStyle value=fill>
+<PARAM NAME=bgColor VALUE=#5478A0> 
+<embed src="tr.dcr" bgColor=#5478A0  width=100% height=100% swRemote="swSaveEnabled='true' swVolume='true' swRestart='true' swPausePlay='true' swFastForward='true' swContextMenu='false' " swStretchStyle=fill
+ type="application/x-director" pluginspage="http://www.macromedia.com/shockwave/download/">
+</embed>
+</object>
+</body>
+</html>

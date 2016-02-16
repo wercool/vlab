@@ -1,0 +1,20 @@
+A:hover
+{
+    COLOR: #ff0000;
+    TEXT-DECORATION: none
+}
+A:link
+{
+    COLOR: #003366;
+    TEXT-DECORATION: none
+}
+A:visited
+{
+    COLOR: #004a95;
+    TEXT-DECORATION: none
+}
+A:active
+{
+    COLOR: #ee4115;
+    TEXT-DECORATION: none
+}
