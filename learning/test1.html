@@ -26,6 +26,9 @@
             var deskModel, ballModel, ballSoftModel;
             var deskMesh, ballMesh, ballSoftMesh;
             var deskShape, ballShape;
+            var ballMaterial = new THREE.MeshPhongMaterial( { color: 0x202020 } );
+
+var toIntersect = [];
 
             // Detects webgl
             if ( ! Detector.webgl )
@@ -45,6 +48,11 @@
             var container, stats;
             var camera, controls, scene, renderer;
             var clock = new THREE.Clock();
+            var clickRequest = false;
+            var mouseCoords = new THREE.Vector2();
+            var raycaster = new THREE.Raycaster();
+            var pos = new THREE.Vector3();
+            var quat = new THREE.Quaternion();
 
             // Physics variables
             var gravityConstant = -9.8;
@@ -72,6 +80,7 @@
                 initGraphics();
                 loadColladaScene();
                 initPhysics();
+                initInput();
             }
 
             function initGraphics()
@@ -83,7 +92,7 @@
 
                 camera.position.x = 0;
                 camera.position.y = 5;
-                camera.position.z = 10;
+                camera.position.z = 15;
 
                 controls = new THREE.OrbitControls( camera );
                 controls.target.y = 2;
@@ -154,8 +163,15 @@
                 physicsShape.calculateLocalInertia( mass, localInertia );
                 var rbInfo = new Ammo.btRigidBodyConstructionInfo( mass, motionState, physicsShape, localInertia );
                 var body = new Ammo.btRigidBody( rbInfo );
-
+if (threeObject.name == "Sphere")
+{
+                body.setRestitution(0.0);
+//body.applyCentralImpulse(new Ammo.btVector3( 100, 0, 0 ));
+}
+else
+{
                 body.setRestitution(1.0);
+}
                 body.setDamping(0.2, 0.2);
 
                 threeObject.userData.physicsBody = body;
@@ -186,7 +202,6 @@
                     var nodes = softBody.get_m_nodes();
                     for ( var j = 0; j < numVerts; j ++ )
                     {
-                        
                         var node = nodes.at( j );
                         var nodePos = node.get_m_x();
                         var x = nodePos.x();
@@ -233,6 +248,11 @@
 
             function manageObjects(model)
             {
+
+                if (model instanceof THREE.Mesh)
+                {
+                    toIntersect.push(model);
+                }
                 model.castShadow = true;
                 model.receiveShadow = true;
                 model.frustumCulled = true;
@@ -241,7 +261,7 @@
                 {
                     model.castShadow = false;
                 }
-                if (model.name == "desk" || model.name == "table")
+                if (model.name == "desk" || model.name == "table" || model.name == "Cube1" || model.name == "Cube2" || model.name == "Cube3")
                 {
                     deskModel = model;
                     deskMesh  = model.children[0];
@@ -255,7 +275,7 @@
                     deskShape.setMargin( margin );
                     createRigidBody( deskModel, deskShape, 0, deskModel.position, deskModel.quaternion );
                 }
-                if (model.name == "ball")
+                if (model.name == "ball" || model.name == "ball1" || model.name == "Cube" || model.name == "Sphere")
                 {
                     ballModel = model;
                     ballMesh  = model.children[0];
@@ -267,14 +287,21 @@
                         ballShape.addPoint(pt);
                     }
                     ballShape.setMargin( margin );
+if (model.name == "Sphere")
+{
+                    createRigidBody( ballModel, ballShape, 10, ballModel.position, ballModel.quaternion );
+}
+else
+{
                     createRigidBody( ballModel, ballShape, 1.0, ballModel.position, ballModel.quaternion );
+}
                 }
-                if (model.name == "ball_soft")
+                if (model.name == "torus_soft")
                 {
                     ballSoftModel = model;
                     ballSoftMesh  = model.children[0];
-                    var ballSoftGeometry = new THREE.BufferGeometry().fromGeometry( ballSoftMesh.geometry );
-                    //createSoftVolume( ballSoftModel, ballSoftGeometry, 15, 120 );
+                    createSoftVolume( ballSoftModel, ballSoftMesh, 0.8, 150 );
+                    model.children[0] = new THREE.Mesh();
                 }
             }
 
@@ -299,6 +326,8 @@
 
                 updatePhysics( deltaTime );
 
+                processClick();
+
                 controls.update( deltaTime );
                 renderer.render( scene, camera );
             }
@@ -315,11 +344,32 @@
 
 
             //Soft volumes functions
-            function createSoftVolume( threeObject, bufferGeom, mass, pressure )
+            function createSoftVolume( threeModel, mesh, mass, pressure )
             {
 
+                var bufferGeom = new THREE.BufferGeometry().fromGeometry( mesh.geometry );
+
+                bufferGeom.translate(threeModel.position.x, threeModel.position.y, threeModel.position.z);
+
                 processGeometry( bufferGeom );
-                            
+
+
+                var volume = new THREE.Mesh( bufferGeom, new THREE.MeshPhongMaterial( { color: 0xFFFFFF } ) );
+                volume.castShadow = true;
+                volume.receiveShadow = true;
+                volume.frustumCulled = false;
+                volume.material = mesh.material;
+volume.callback = function() { console.log( this.name ); }
+                scene.add( volume );
+
+
+//                var volume = mesh;
+//                volume.geometry = bufferGeom;
+
+volume.name = "torus";
+volume.callback = function() { console.log( this.name ); return this; }
+toIntersect.push(volume);
+
                 // Volume physic object
 
                 var volumeSoftBody = softBodyHelpers.CreateFromTriMesh(
@@ -349,12 +399,12 @@
                 volumeSoftBody.setTotalMass( mass, false )
                 Ammo.castObject( volumeSoftBody, Ammo.btCollisionObject ).getCollisionShape().setMargin( margin );
                 physicsWorld.addSoftBody( volumeSoftBody, 1, -1 );
-                threeObject.userData.physicsBody = volumeSoftBody;
+                volume.userData.physicsBody = volumeSoftBody;
                 // Disable deactivation
                 volumeSoftBody.setActivationState( 4 );
 
-                softBodies.push( threeObject );
-                
+                softBodies.push( volume );
+
             }
 
 
@@ -386,7 +436,6 @@
 
                 for ( var i = 0; i < numVertices; i++ ) 
                 {
-
                     var p = geometry.vertices[ i ];
 
                     var i3 = i * 3;
@@ -394,11 +443,10 @@
                     vertices[ i3 ] = p.x;
                     vertices[ i3 + 1 ] = p.y;
                     vertices[ i3 + 2 ] = p.z;
-
                 }
 
-                for ( var i = 0; i < numFaces; i++ ) {
-
+                for ( var i = 0; i < numFaces; i++ ) 
+                {
                     var f = geometry.faces[ i ];
 
                     var i3 = i * 3;
@@ -406,7 +454,6 @@
                     indices[ i3 ] = f.a;
                     indices[ i3 + 1 ] = f.b;
                     indices[ i3 + 2 ] = f.c;
-
                 }
 
                 bufferGeom.setIndex( new THREE.BufferAttribute( indices, 1 ) );
@@ -439,23 +486,78 @@
                 bufGeometry.ammoIndices = indices;
                 bufGeometry.ammoIndexAssociation = [];
 
-                for ( var i = 0; i < numIdxVertices; i++ ) {
-                    
+                for ( var i = 0; i < numIdxVertices; i++ )
+                {                    
                     var association = [];
                     bufGeometry.ammoIndexAssociation.push( association );
                     
                     var i3 = i * 3;
                     
-                    for ( var j = 0; j < numVertices; j++ ) {
+                    for ( var j = 0; j < numVertices; j++ )
+                    {
                         var j3 = j * 3;
                         if ( isEqual( idxVertices[ i3 ], idxVertices[ i3 + 1 ],  idxVertices[ i3 + 2 ],
-                                      vertices[ j3 ], vertices[ j3 + 1 ], vertices[ j3 + 2 ] ) ) {
+                                      vertices[ j3 ], vertices[ j3 + 1 ], vertices[ j3 + 2 ] ) )
+                        {
                             association.push( j3 );
                         }
                     }
                     
                 }
                 
+            }
+
+            function initInput() 
+            {
+
+                window.addEventListener( 'mousedown', function( event ) {
+                    if ( ! clickRequest && event.button == 0) {
+
+                        mouseCoords.set(
+                            ( event.clientX / window.innerWidth ) * 2 - 1,
+                            - ( event.clientY / window.innerHeight ) * 2 + 1
+                        );
+
+                        clickRequest = true;
+
+                    }
+                    
+                }, false );
+
+            }
+
+            function processClick() 
+            {
+
+                if ( clickRequest ) 
+                {
+
+                    raycaster.setFromCamera( mouseCoords, camera );
+                    
+                    var intersects = raycaster.intersectObjects( toIntersect ); 
+
+                    if ( intersects.length > 0 ) 
+                    {
+                        if (typeof(intersects[0].object.callback) == "function")
+                        {
+                            var softVol = intersects[0].object.callback();
+                        }
+                        else
+                        {
+                            log(intersects[0].object.parent.name);
+                            var vec
+                            vec = new Ammo.btVector3(0, 10, 0);
+                            intersects[0].object.parent.userData.physicsBody.setLinearVelocity(vec);
+                            vec = new Ammo.btVector3(-500, 0, 0);
+                            //intersects[0].object.parent.userData.physicsBody.setAngularVelocity(vec);
+                            intersects[0].object.parent.userData.physicsBody.applyCentralLocalForce(vec);
+                        }
+                    }
+
+                    clickRequest = false;
+
+                }
+
             }
 
         </script>
