@@ -303,7 +303,7 @@ else
                 {
                     ballSoftModel = model;
                     ballSoftMesh  = model.children[0];
-                    createSoftVolume( ballSoftModel, ballSoftMesh, 0.8, 150 );
+                    createSoftVolume( ballSoftModel, ballSoftMesh, 0.8, 300 );
                     model.children[0] = new THREE.Mesh();
                 }
             }
@@ -334,12 +334,13 @@ else
                 controls.update( deltaTime );
                 renderer.render( scene, camera );
 
-
-                if( video.readyState === video.HAVE_ENOUGH_DATA )
+                if (video != undefined)
                 {
-                    videoTexture.needsUpdate = true;
+                    if( video.readyState === video.HAVE_ENOUGH_DATA )
+                    {
+                        videoTexture.needsUpdate = true;
+                    }
                 }
-
             }
 
             function log(message)
