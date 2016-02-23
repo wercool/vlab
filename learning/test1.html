@@ -27,6 +27,9 @@
             var deskMesh, ballMesh, ballSoftMesh;
             var deskShape, ballShape;
             var ballMaterial = new THREE.MeshPhongMaterial( { color: 0x202020 } );
+            var video;
+            var videoMaterial;
+            var videoTexture;
 
 var toIntersect = [];
 
@@ -300,7 +303,7 @@ else
                 {
                     ballSoftModel = model;
                     ballSoftMesh  = model.children[0];
-                    createSoftVolume( ballSoftModel, ballSoftMesh, 0.8, 150 );
+                    createSoftVolume( ballSoftModel, ballSoftMesh, 0.8, 300 );
                     model.children[0] = new THREE.Mesh();
                 }
             }
@@ -330,6 +333,14 @@ else
 
                 controls.update( deltaTime );
                 renderer.render( scene, camera );
+
+                if (video != undefined)
+                {
+                    if( video.readyState === video.HAVE_ENOUGH_DATA )
+                    {
+                        videoTexture.needsUpdate = true;
+                    }
+                }
             }
 
             function log(message)
@@ -367,7 +378,7 @@ volume.callback = function() { console.log( this.name ); }
 //                volume.geometry = bufferGeom;
 
 volume.name = "torus";
-volume.callback = function() { console.log( this.name ); return this; }
+volume.callback = function() { console.log( this.name ); return this;  }
 toIntersect.push(volume);
 
                 // Volume physic object
@@ -544,13 +555,36 @@ toIntersect.push(volume);
                         }
                         else
                         {
-                            log(intersects[0].object.parent.name);
-                            var vec
-                            vec = new Ammo.btVector3(0, 10, 0);
-                            intersects[0].object.parent.userData.physicsBody.setLinearVelocity(vec);
-                            vec = new Ammo.btVector3(-500, 0, 0);
-                            //intersects[0].object.parent.userData.physicsBody.setAngularVelocity(vec);
-                            intersects[0].object.parent.userData.physicsBody.applyCentralLocalForce(vec);
+                            if (intersects[0].object.parent.userData.physicsBody != undefined)
+                            {
+                                log(intersects[0].object.parent.name);
+                                var vec
+                                vec = new Ammo.btVector3(0, 10, 0);
+                                intersects[0].object.parent.userData.physicsBody.setLinearVelocity(vec);
+                                vec = new Ammo.btVector3(-500, 0, 0);
+                                //intersects[0].object.parent.userData.physicsBody.setAngularVelocity(vec);
+                                intersects[0].object.parent.userData.physicsBody.applyCentralLocalForce(vec);
+                            }
+                            else
+                            {
+                                log(intersects[0].object.parent.name);
+                                video      = document.createElement('video');
+                                video.width    = 800;
+                                video.height   = 600;
+                                video.src = "willson.mp4"
+                                video.controls = true;
+                                video.play();
+
+                                videoTexture = new THREE.Texture( video );
+					            videoTexture.wrapS = THREE.ClampToEdgeWrapping;
+					            videoTexture.wrapT = THREE.ClampToEdgeWrapping;
+
+                                videoMaterial   = new THREE.MeshBasicMaterial( { color:0xffffff, map: videoTexture } );
+                                videoTexture.minFilter = THREE.LinearFilter;
+                                videoTexture.magFilter = THREE.LinearFilter;
+                                intersects[0].object.material = videoMaterial;
+
+                            }
                         }
                     }
 
