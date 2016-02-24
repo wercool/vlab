@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset=utf-8>
+        <title>Test 3</title>
+        <style>
+            body { margin: 0; }
+            canvas { width: 100%; height: 100% }
+        </style>
+    </head>
+    <body>
+
+        <div id="container"><br /><br /><br /><br /><br />Loading...</div>
+
+        <script src="js/three.js/three.min.js"></script>
+        <script src="js/three.js/stats.min.js"></script>
+        <script src="js/three.js/js/Detector.js"></script>
+        <script src="js/three.js/js/controls/OrbitControls.js"></script>
+        <script src="js/three.js/js/loaders/ColladaLoader.js"></script>
+
+        <script>
+
+            // Graphics variables
+            var container, stats;
+            var camera, controls, scene, renderer;
+            var clock = new THREE.Clock();
+            var clickRequest = false;
+            var mouseCoords = new THREE.Vector2();
+            var raycaster = new THREE.Raycaster();
+            var pos = new THREE.Vector3();
+            var quat = new THREE.Quaternion();
+
+            var colladaSceneURL = "models/test3.dae";
+            var colladaScene;
+
+            var toIntersect = [];
+
+            var meshes = [];
+            var lights = [];
+            var groups = [];
+
+            init();
+
+
+            // - Functions -
+            function init()
+            {
+                initGraphics();
+                loadColladaScene();
+                initInput();
+            }
+
+            function initGraphics()
+            {
+                container = document.getElementById( "container" );
+                camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.1, 2000 );
+
+
+                scene = new THREE.Scene();
+
+
+                camera.position.x = 0;
+                camera.position.y = 5;
+                camera.position.z = -15;
+
+                controls = new THREE.OrbitControls( camera );
+                controls.target.y = 2;
+
+                renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+                renderer.setClearColor( 0xbfd1e5 );
+                renderer.setPixelRatio( window.devicePixelRatio );
+                renderer.setSize( window.innerWidth, window.innerHeight );
+                renderer.shadowMap.enabled = true;
+                renderer.shadowMapSoft = true;
+                renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+
+                container.innerHTML = "";
+
+                container.appendChild( renderer.domElement );
+
+                stats = new Stats();
+                stats.domElement.style.position = 'absolute';
+                stats.domElement.style.top = '0px';
+                container.appendChild( stats.domElement );
+
+                window.addEventListener( 'resize', onWindowResize, false );
+
+        		requestAnimationFrame( render );
+            }
+
+            function onWindowResize()
+            {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize( window.innerWidth, window.innerHeight );
+            }
+
+            function render()
+            {
+                requestAnimationFrame( render );
+
+                var deltaTime = clock.getDelta();
+
+                processClick();
+
+                stats.update();
+                controls.update( deltaTime );
+                renderer.render( scene, camera );
+            }
+
+            function loadColladaScene()
+            {
+                var loader = new THREE.ColladaLoader();
+                loader.options.convertUpAxis = true;
+                loader.load( colladaSceneURL, traverseColladaScene );
+            }
+
+
+            var group = new THREE.Object3D();
+            function traverseColladaScene(collada)
+            {
+                for (var effectName in collada.dae.effects)
+                {
+                    if( collada.dae.effects[effectName].shader.transparency != undefined )
+                    {
+                        collada.dae.effects[effectName].shader.material.transparent = true;
+                        collada.dae.effects[effectName].shader.material.opacity = collada.dae.effects[effectName].shader.transparency;
+                        console.log(collada.dae.effects[effectName]);
+                    }
+                }
+
+                colladaScene = collada.scene;
+                colladaScene.traverse(function ( object ) {
+                    if (object instanceof THREE.SpotLight || object instanceof THREE.PointLight || object instanceof THREE.DirectionalLight || object instanceof THREE.SpotLight)
+                    {
+                        object.name = object.parent.name;
+                        object.position.x = object.parent.position.x;
+                        object.position.y = object.parent.position.y;
+                        object.position.z = object.parent.position.z;
+
+                        lights.push(object);
+                    }
+                    if (object instanceof THREE.Mesh)
+                    {
+                        object.name = object.parent.name;
+                        object.position.x = object.parent.position.x;
+                        object.position.y = object.parent.position.y;
+                        object.position.z = object.parent.position.z;
+
+                        if (object.material.name.indexOf('_DS') > 0)
+                        {
+                            object.material.side = THREE.DoubleSide;
+                        }
+
+                        if (object.name.indexOf('_G1') > 0)
+                        {
+                            group.add(object);
+                        }
+                        else
+                        {
+                            meshes.push(object);
+                            toIntersect.push(object);
+                        }
+                    }
+
+                });
+
+                addObjects();
+            }
+
+            function addObjects()
+            {
+
+                group.callback = function(){console.log(this.name); this.rotation.x += 0.25;};
+                scene.add( group );
+
+for (var child in group.children)
+{
+    group.children[child].castShadow = true;
+    toIntersect.push(group.children[child]);
+}
+
+                var shape;
+
+                for ( var i = 0, il = meshes.length; i < il; i++ )
+                {
+
+                    var mesh = meshes[ i ];
+
+if (mesh.name != "Plane")
+{
+    mesh.callback = function(){console.log(this.name); this.rotation.x += 0.25;};
+}
+
+		            mesh.receiveShadow = true;
+		            mesh.castShadow = true;
+
+                    scene.add( mesh );
+                }
+
+                for ( var i = 0, il = lights.length; i < il; i++ )
+                {
+                    var light = lights[ i ];
+
+                    if (light.name != "Point")
+                    {
+                        light.castShadow = true;
+                    }
+
+                    scene.add( light );
+                }
+            }
+
+            function initInput() 
+            {
+
+
+                window.addEventListener( 'mousedown', function( event ) {
+                    if ( ! clickRequest && event.button == 0) {
+
+                        mouseCoords.set(
+                            ( event.clientX / window.innerWidth ) * 2 - 1,
+                            - ( event.clientY / window.innerHeight ) * 2 + 1
+                        );
+
+                        clickRequest = true;
+
+                    }
+                    
+                }, false );
+
+                window.addEventListener( 'mousemove', onDocumentMouseMove, false );
+
+            }
+
+
+            function processClick() 
+            {
+                if ( clickRequest ) 
+                {
+
+                    raycaster.setFromCamera( mouseCoords, camera );
+                    
+                    var intersects = raycaster.intersectObjects( toIntersect ); 
+
+
+                    if ( intersects.length > 0 ) 
+                    {
+                        if (intersects[0].object.parent instanceof THREE.Object3D)
+                        {
+                            if (typeof(intersects[0].object.parent.callback) == "function")
+                            {
+                                intersects[0].object.parent.callback();
+                            }
+                        }
+                        if (typeof(intersects[0].object.callback) == "function")
+                        {
+                            var softVol = intersects[0].object.callback();
+                        }
+                    }
+
+                    clickRequest = false;
+
+                }
+
+            }
+
+
+
+			function onDocumentMouseMove( event ) 
+            {
+                mouseCoords.set(
+                    ( event.clientX / window.innerWidth ) * 2 - 1,
+                    - ( event.clientY / window.innerHeight ) * 2 + 1
+                );
+
+                event.preventDefault();
+
+                raycaster.setFromCamera( mouseCoords, camera );
+
+                var intersects = raycaster.intersectObjects( toIntersect ); 
+
+
+                if ( intersects.length > 0 ) 
+                {
+                    if (typeof(intersects[0].object.callback) == "function")
+                    {
+					    container.style.cursor = 'pointer';
+                    }
+                    else
+                    {
+                        if (intersects[0].object.parent)
+                        {
+                            if (typeof(intersects[0].object.parent.callback) == "function")
+                            {
+                                container.style.cursor = 'pointer';
+                            }
+                        }
+                        else
+                        {
+                            container.style.cursor = 'auto';
+                        }
+                    }
+                }
+                else
+                {
+					container.style.cursor = 'auto';
+				}
+
+			}
+        </script>
+    </body>
+</html>
