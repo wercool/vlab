@@ -18,6 +18,9 @@
         <script src="js/three.js/js/controls/OrbitControls.js"></script>
         <script src="js/three.js/js/loaders/ColladaLoader.js"></script>
 
+        <script src="js/three.js/js/loaders/MTLLoader.js"></script>
+        <script src="js/three.js/js/loaders/OBJLoader.js"></script>
+
         <script>
 
             // Graphics variables
@@ -169,14 +172,50 @@
                 addObjects();
             }
 
-            function addObjects()
+			var onProgress = function ( xhr )
+            {
+				if ( xhr.lengthComputable )
+                {
+					var percentComplete = xhr.loaded / xhr.total * 100;
+					console.log( Math.round(percentComplete, 2) + '% downloaded' );
+				}
+			};
+			var onError = function ( xhr ) { };
+
+            function loadScene()
             {
 
+				var ambient = new THREE.AmbientLight( 0x444444 );
+				scene.add( ambient );
+
+				var directionalLight = new THREE.DirectionalLight( 0xffeedd );
+				directionalLight.position.set( 0, 0, 1 ).normalize();
+				scene.add( directionalLight );
+
+                var mtlLoader = new THREE.MTLLoader();
+				mtlLoader.setBaseUrl( 'models/' );
+				mtlLoader.setPath( 'models/' );
+                mtlLoader.load( 'test4.mtl', function( materials ) {
+					materials.preload();
+					var objLoader = new THREE.OBJLoader();
+					objLoader.setMaterials( materials );
+					objLoader.load( 'models/test4.obj', function ( object ) {
+console.log(object);
+object.position.y = 4;
+						scene.add( object );
+					}, onProgress, onError );
+				});
+            }
+
+            function addObjects()
+            {
+loadScene();
                 group.callback = function(){console.log(this.name); this.rotation.x += 0.25;};
                 scene.add( group );
 
 for (var child in group.children)
 {
+console.log(group.children[child]);
     group.children[child].castShadow = true;
     toIntersect.push(group.children[child]);
 }

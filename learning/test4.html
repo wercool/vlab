@@ -16,6 +16,7 @@
         <script src="js/three.js/stats.min.js"></script>
         <script src="js/three.js/js/Detector.js"></script>
         <script src="js/three.js/js/controls/OrbitControls.js"></script>
+        <script src="js/three.js/js/loaders/MTLLoader.js"></script>
         <script src="js/three.js/js/loaders/OBJLoader.js"></script>
 
         <script>
@@ -110,62 +111,39 @@
 
             function loadScene()
             {
-                var loader = new THREE.ObjectLoader();
-                loader.load("models/test4.json",function ( obj ) {
-                     //scene.add( obj );
 
-                    for (var child in obj.children)
-                    {
-                        var object = obj.children[child];
+				var ambient = new THREE.AmbientLight( 0x444444 );
+				scene.add( ambient );
+
+				var directionalLight = new THREE.DirectionalLight( 0xffeedd );
+				directionalLight.position.set( 0, 0, 1 ).normalize();
+				scene.add( directionalLight );
+
+                var mtlLoader = new THREE.MTLLoader();
+				mtlLoader.setBaseUrl( 'models/' );
+				mtlLoader.setPath( 'models/' );
+                mtlLoader.load( 'test4.mtl', function( materials ) {
+					materials.preload();
+					var objLoader = new THREE.OBJLoader();
+					objLoader.setMaterials( materials );
+					objLoader.load( 'models/test4.obj', function ( object ) {
 console.log(object);
-
-                        if (object instanceof THREE.SpotLight || object instanceof THREE.PointLight || object instanceof THREE.DirectionalLight || object instanceof THREE.SpotLight)
-                        {
-                            lights.push(object);
-                        }
-                        if (object instanceof THREE.Mesh)
-                        {
-                            meshes.push(object);
-                            toIntersect.push(object);
-                        }
-                    }
-
-                    addObjects();
-                });
+object.rotation.x = 0.5;
+						scene.add( object );
+					}, onProgress, onError );
+				});
             }
 
-            function addObjects()
+
+			var onProgress = function ( xhr )
             {
-                var shape;
-
-                for ( var i = 0, il = meshes.length; i < il; i++ )
+				if ( xhr.lengthComputable )
                 {
-
-                    var mesh = meshes[ i ];
-
-if (mesh.name != "Plane")
-{
-    mesh.callback = function(){console.log(this.name); this.rotation.x += 0.25;};
-}
-
-		            mesh.receiveShadow = true;
-		            mesh.castShadow = true;
-
-                    scene.add( mesh );
-                }
-
-                for ( var i = 0, il = lights.length; i < il; i++ )
-                {
-                    var light = lights[ i ];
-
-                    if (light.name != "Point")
-                    {
-                        light.castShadow = true;
-                    }
-
-                    scene.add( light );
-                }
-            }
+					var percentComplete = xhr.loaded / xhr.total * 100;
+					console.log( Math.round(percentComplete, 2) + '% downloaded' );
+				}
+			};
+			var onError = function ( xhr ) { };
 
             function initInput() 
             {
