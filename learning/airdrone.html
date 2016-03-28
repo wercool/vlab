@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset=utf-8>
+        <title>Test 1</title>
+        <style>
+            body { margin: 0; }
+            canvas { width: 100%; height: 100% }
+        </style>
+    </head>
+    <body>
+
+        <div id="container"onmousedown="startImpulse(event)" onmouseup="stopImpulse(event)"><br /><br /><br /><br /><br />Loading...</div>
+
+        <script src="js/three.js/three.min.js"></script>
+        <script src="js/three.js/stats.min.js"></script>
+        <script src="js/three.js/js/Detector.js"></script>
+        <script src="js/three.js/js/controls/OrbitControls.js"></script>
+        <script src="js/three.js/js/loaders/ColladaLoader.js"></script>
+
+        <script src="js/physi.js"></script>
+
+        <script>
+
+            // Graphics variables
+            var container, stats;
+            var camera, controls, scene, renderer;
+            var clock = new THREE.Clock();
+            var clickRequest = false;
+            var mouseCoords = new THREE.Vector2();
+            var raycaster = new THREE.Raycaster();
+            var pos = new THREE.Vector3();
+            var quat = new THREE.Quaternion();
+
+            var colladaSceneURL = "models/airdrone.dae";
+            var colladaScene;
+
+            var airdrone;
+            var aridroneApplyImpulse = false;
+            var vec1 = new THREE.Vector3(0.0, 0.0, 0.0);
+            var vec2 = new THREE.Vector3(0.0, 0.0, 0.0);
+            var vec3 = new THREE.Vector3(0.0, 0.0, 0.0);
+            var vec4 = new THREE.Vector3(0.0, 0.0, 0.0);
+            var vecC = new THREE.Vector3(0.0, 0.0, 0.0);
+
+            var physics_stats;
+            var meshes = [];
+            var lights = [];
+
+            'use strict';
+
+            Physijs.scripts.worker = "/js/physijs_worker.js";
+            Physijs.scripts.ammo = "/js/ammo.js";
+
+            init();
+
+
+            // - Functions -
+            function init()
+            {
+                initGraphics();
+                loadColladaScene();
+            }
+
+            function initGraphics()
+            {
+                container = document.getElementById( "container" );
+                camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.1, 2000 );
+
+
+                scene = new Physijs.Scene({ fixedTimeStep: 1 / 200 });
+                scene.setGravity(new THREE.Vector3( 0, 0, -9.8 ));
+                scene.addEventListener(
+                    'update',
+                    function() 
+                    {
+                        scene.simulate( undefined, 2 );
+                        physics_stats.update();
+                    }
+                );
+
+
+
+                camera.position.x = 0;
+                camera.position.y = 5;
+                camera.position.z = 15;
+                camera.matrixWorldInverse = true;
+
+                controls = new THREE.OrbitControls( camera );
+                controls.target.y = 2;
+
+                renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+                renderer.setClearColor( 0xbfd1e5 );
+                renderer.setPixelRatio( window.devicePixelRatio );
+                renderer.setSize( window.innerWidth, window.innerHeight );
+                renderer.shadowMap.enabled = true;
+                renderer.shadowMapSoft = true;
+                renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+
+                container.innerHTML = "";
+
+                container.appendChild( renderer.domElement );
+
+                stats = new Stats();
+                stats.domElement.style.position = 'absolute';
+                stats.domElement.style.top = '0px';
+                container.appendChild( stats.domElement );
+
+		        physics_stats = new Stats();
+		        physics_stats.domElement.style.position = 'absolute';
+		        physics_stats.domElement.style.top = '50px';
+		        physics_stats.domElement.style.zIndex = 100;
+		        document.getElementById( 'container' ).appendChild( physics_stats.domElement );
+
+                window.addEventListener( 'resize', onWindowResize, false );
+
+        		requestAnimationFrame( render );
+            }
+
+            function onWindowResize()
+            {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize( window.innerWidth, window.innerHeight );
+            }
+
+            function render()
+            {
+                requestAnimationFrame( render );
+
+                var deltaTime = clock.getDelta();
+
+                if (airdrone)
+                {
+                    if (aridroneApplyImpulse)
+                    {
+
+                        vec1 = new THREE.Vector3(0.0, 0.0, 0.02);
+                        vec2 = new THREE.Vector3(0.0, 0.0, 0.02);
+                        vec3 = new THREE.Vector3(0.0, 0.0, 0.02);
+                        vec4 = new THREE.Vector3(0.0, 0.0, 0.02);
+
+                        vecC = new THREE.Vector3(0.0, 0.0, 0.0);
+
+                        airdrone.applyImpulse(vec1, new THREE.Vector3(1.0, 0.0, 0.0));
+                        airdrone.applyImpulse(vec2, new THREE.Vector3(-1.0, 0.0, 0.0));
+                        airdrone.applyImpulse(vec3, new THREE.Vector3(0.0, 1.0, 0.0));
+                        airdrone.applyImpulse(vec4, new THREE.Vector3(0.0, -1.0, 0.0));
+
+                    }
+
+                    if (airdrone.rotation.z > 0)
+                    {
+                        vec1 = new THREE.Vector3(0.0, -0.0001, 0.0);
+                        airdrone.applyImpulse(vec1, new THREE.Vector3(1.0, 0.0, 0.0));
+                    }
+                    if (airdrone.rotation.z < 0)
+                    {
+                        vec2 = new THREE.Vector3(0.0, -0.0001, 0.0);
+                        airdrone.applyImpulse(vec2, new THREE.Vector3(-1.0, 0.0, 0.0));
+                    }
+
+                    if (airdrone.rotation.x > 0)
+                    {
+                        vec3 = new THREE.Vector3(0.0, -0.0001, 0.0);
+                        airdrone.applyImpulse(vec4, new THREE.Vector3(0.0, 1.0, 0.0));
+                    }
+                    if (airdrone.rotation.x < 0)
+                    {
+                        vec4 = new THREE.Vector3(0.0, -0.0001, 0.0);
+                        airdrone.applyImpulse(vec4, new THREE.Vector3(0.0, -1.0, 0.0));
+                    }
+
+
+/*
+                    vecC.x = -airdrone.rotation.z / 100;
+                    vecC.z = airdrone.rotation.x / 100;
+                    airdrone.applyImpulse(vecC, new THREE.Vector3(0.0, 0.0, 0.0));
+*/
+
+                    console.log(airdrone.rotation.x);
+
+                }
+
+                stats.update();
+                controls.update( deltaTime );
+                renderer.render( scene, camera );
+            }
+
+            function loadColladaScene()
+            {
+                var loader = new THREE.ColladaLoader();
+                loader.options.convertUpAxis = false;
+                loader.load( colladaSceneURL, traverseColladaScene );
+            }
+
+            function traverseColladaScene(collada)
+            {
+                colladaScene = collada.scene;
+                colladaScene.traverse(function ( object ) {
+                    if (object instanceof THREE.SpotLight || object instanceof THREE.PointLight)
+                    {
+                        object.name = object.parent.name;
+                        object.position.x = object.parent.position.x;
+                        object.position.y = object.parent.position.y;
+                        object.position.z = object.parent.position.z;
+
+                        lights.push(object);
+                    }
+                    if (object instanceof THREE.Mesh)
+                    {
+                        object.name = object.parent.name;
+                        object.position.x = object.parent.position.x;
+                        object.position.y = object.parent.position.y;
+                        object.position.z = object.parent.position.z;
+
+                        meshes.push(object);
+                    }
+                });
+
+                addObjects();
+            }
+
+            function addObjects()
+            {
+                var shape;
+                var physijsMaterial;
+
+                for ( var i = 0, il = meshes.length; i < il; i++ )
+                {
+
+                    var mesh = meshes[ i ];
+                    switch ( mesh.name )
+                    {
+                        case "ground":
+                            physijsMaterial = Physijs.createMaterial(
+		                        mesh.material,
+		                        1.0, // friction
+		                        0.0  // restitution
+	                        );
+                            shape = new Physijs.ConvexMesh(
+						        mesh.geometry,
+						        physijsMaterial
+					        );
+                            shape.mass = 0.0;
+                        break;
+                        case "airdrone":
+                            physijsMaterial = Physijs.createMaterial(
+		                        mesh.material,
+		                        1.0, // friction
+		                        0.0  // restitution
+	                        );
+                            shape = new Physijs.ConvexMesh(
+						        mesh.geometry,
+						        physijsMaterial
+					        );
+                            shape.mass = 0.3;
+                            airdrone = shape;
+                        break;
+                    }
+
+                    shape.position.x = mesh.position.x;
+                    shape.position.y = mesh.position.y;
+                    shape.position.z = mesh.position.z;
+
+		            shape.receiveShadow = true;
+		            shape.castShadow = true;
+
+                    scene.add( shape );
+                }
+
+                for ( var i = 0, il = lights.length; i < il; i++ )
+                {
+                    var light = lights[ i ];
+
+                    light.castShadow = true;
+                    light.shadow.mapSize.width = 2048;
+                    light.shadow.mapSize.height = 2048;
+
+                    scene.add( light );
+                }
+
+                scene.simulate();
+            }
+
+            function startImpulse(event)
+            {
+                if (!event.ctrlKey)
+                {
+                    aridroneApplyImpulse = true;
+                }
+            }
+
+            function stopImpulse(event)
+            {
+                if (!event.ctrlKey)
+                {
+                    aridroneApplyImpulse = false;
+                }
+            }
+        </script>
+    </body>
+</html>
