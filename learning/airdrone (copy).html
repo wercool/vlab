@@ -18,10 +18,12 @@
         <script src="js/three.js/js/controls/OrbitControls.js"></script>
         <script src="js/three.js/js/loaders/ColladaLoader.js"></script>
 
+        <script src="js/physi.js"></script>
+
         <script>
 
             // Graphics variables
-            var container;
+            var container, stats;
             var camera, controls, scene, renderer;
             var clock = new THREE.Clock();
             var clickRequest = false;
@@ -34,13 +36,22 @@
             var colladaScene;
 
             var airdrone;
-            var aridroneAscent = false;
+            var aridroneApplyImpulse = false;
+            var vec1 = new THREE.Vector3(0.0, 0.0, 0.0);
+            var vec2 = new THREE.Vector3(0.0, 0.0, 0.0);
+            var vec3 = new THREE.Vector3(0.0, 0.0, 0.0);
+            var vec4 = new THREE.Vector3(0.0, 0.0, 0.0);
+            var vecC = new THREE.Vector3(0.0, 0.0, 0.0);
             var dir = 0;
 
+            var physics_stats;
             var meshes = [];
             var lights = [];
 
             'use strict';
+
+            Physijs.scripts.worker = "/js/physijs_worker.js";
+            Physijs.scripts.ammo = "/js/ammo.js";
 
             init();
 
@@ -58,18 +69,27 @@
                 camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.1, 2000 );
 
 
-                scene = new THREE.Scene();
+                scene = new Physijs.Scene({ fixedTimeStep: 1 / 120 });
+                scene.setGravity(new THREE.Vector3( 0, 0, -9.8 ));
+                scene.addEventListener(
+                    'update',
+                    function() 
+                    {
+                        scene.simulate( undefined, 2 );
+                        //physics_stats.update();
+                    }
+                );
 
                 var axis = new THREE.AxisHelper( 5 );
                 scene.add(axis);
 
                 camera.position.x = 0;
                 camera.position.y = 10;
-                camera.position.z = 10;
+                camera.position.z = 5;
                 camera.up.set( 0, 0, 1 );
 
                 controls = new THREE.OrbitControls( camera );
-                controls.target.z = 1;
+                controls.target.y = 2;
 
                 renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
                 renderer.setClearColor( 0xbfd1e5 );
@@ -83,7 +103,18 @@
                 container.innerHTML = "";
 
                 container.appendChild( renderer.domElement );
+/*
+                stats = new Stats();
+                stats.domElement.style.position = 'absolute';
+                stats.domElement.style.top = '0px';
+                container.appendChild( stats.domElement );
 
+                physics_stats = new Stats();
+                physics_stats.domElement.style.position = 'absolute';
+                physics_stats.domElement.style.top = '50px';
+                physics_stats.domElement.style.zIndex = 100;
+                document.getElementById( 'container' ).appendChild( physics_stats.domElement );
+*/
                 window.addEventListener( 'resize', onWindowResize, false );
 
                 requestAnimationFrame( render );
@@ -103,39 +134,54 @@
                 var deltaTime = clock.getDelta();
                 if (airdrone)
                 {
-                    if (aridroneAscent)
+airdrone.position.z += 0.01;
+/*
+                    if (airdrone.getLinearVelocity().z < 0)
                     {
-                        airdrone.position.z += 0.05;
-                        switch (dir)
+                        var acc = 1 / (airdrone.position.z / 5);
+                        vec1 = new THREE.Vector3(0.0, 0.0, 0.05 * acc);
+                        vec2 = new THREE.Vector3(0.0, 0.0, 0.05 * acc);
+                        vec3 = new THREE.Vector3(0.0, 0.0, 0.05 * acc);
+                        vec4 = new THREE.Vector3(0.0, 0.0, 0.05 * acc);
+
+                        if (aridroneApplyImpulse)
                         {
-                            case 1:
-                                airdrone.position.x += 0.05;
-                                airdrone.rotation.y = 0.01;
-                            break;
-                            case 2:
-                                airdrone.position.x -= 0.05;
-                                airdrone.rotation.y = -0.01;
-                            break;
-                            case 3:
-                                airdrone.position.y += 0.05;
-                                airdrone.rotation.x = -0.01;
-                            break;
-                            case 4:
-                                airdrone.position.y -= 0.05;
-                                airdrone.rotation.x = 0.01;
-                            break;
+                            vec1.z += (dir == 1) ? 0.002 : 0.0;
+                            vec2.z += (dir == 2) ? 0.002 : 0.0;
+                            vec3.z += (dir == 3) ? 0.002 : 0.0;
+                            vec4.z += (dir == 4) ? 0.002 : 0.0;
                         }
-                    }
-                    else
-                    {
-                        airdrone.rotation.x = 0.0;
-                        airdrone.rotation.y = 0.0;
-                        if (airdrone.position.z > 0.1)
+
+
+                        if (airdrone.rotation.y < 0)
                         {
-                            airdrone.position.z -= 0.05;
+                            vec1.z -= 0.0001;
                         }
+                        else
+                        {
+                            vec2.z -= 0.0001;
+                        }
+                        if (airdrone.rotation.x < 0)
+                        {
+                            vec3.z -= 0.0001;
+                        }
+                        else
+                        {
+                            vec4.z -= 0.001;
+                        }
+
+                        airdrone.applyImpulse(vec1, new THREE.Vector3(1.0, 0.0, 0.0));
+                        airdrone.applyImpulse(vec2, new THREE.Vector3(-1.0, 0.0, 0.0));
+                        airdrone.applyImpulse(vec3, new THREE.Vector3(0.0, -1.0, 0.0));
+                        airdrone.applyImpulse(vec4, new THREE.Vector3(0.0, 1.0, 0.0));
                     }
+
+                    vecC.x = airdrone.rotation.y / 10;
+                    vecC.y = -airdrone.rotation.x / 10;
+                    //airdrone.applyImpulse(vecC, new THREE.Vector3(0.0, 0.0, 0.0));
+*/
                 }
+                //stats.update();
                 controls.update( deltaTime );
                 renderer.render( scene, camera );
             }
@@ -176,19 +222,50 @@
 
             function addObjects()
             {
+                var shape;
+                var physijsMaterial;
+
                 for ( var i = 0, il = meshes.length; i < il; i++ )
                 {
 
                     var mesh = meshes[ i ];
-                    if ( mesh.name == "airdrone")
+                    switch ( mesh.name )
                     {
-                        airdrone = mesh;
+                        case "ground":
+                            physijsMaterial = Physijs.createMaterial(
+                                mesh.material,
+                                1.0, // friction
+                                0.0  // restitution
+                            );
+                            shape = new Physijs.ConvexMesh(
+                                mesh.geometry,
+                                physijsMaterial
+                            );
+                            shape.mass = 0.0;
+                        break;
+                        case "airdrone":
+                            physijsMaterial = Physijs.createMaterial(
+                                mesh.material,
+                                1.0, // friction
+                                0.0  // restitution
+                            );
+                            shape = new Physijs.ConvexMesh(
+                                mesh.geometry,
+                                physijsMaterial
+                            );
+                            shape.mass = 1.0;
+                            airdrone = shape;
+                        break;
                     }
 
-                    mesh.receiveShadow = true;
-                    mesh.castShadow = true;
+                    shape.position.x = mesh.position.x;
+                    shape.position.y = mesh.position.y;
+                    shape.position.z = mesh.position.z;
 
-                    scene.add(mesh);
+                    shape.receiveShadow = true;
+                    shape.castShadow = true;
+
+                    scene.add(shape);
                 }
 
                 for ( var i = 0, il = lights.length; i < il; i++ )
@@ -202,18 +279,27 @@
                     scene.add(light);
                 }
 
-                airdrone.position.z = 5.0;
+                scene.simulate();
+
+                vec1 = new THREE.Vector3(0.0, 0.0, 0.1);
+                vec2 = new THREE.Vector3(0.0, 0.0, 0.1);
+                vec3 = new THREE.Vector3(0.0, 0.0, 0.1);
+                vec4 = new THREE.Vector3(0.0, 0.0, 0.1);
+                airdrone.applyImpulse(vec1, new THREE.Vector3(1.0, 0.0, 0.0));
+                airdrone.applyImpulse(vec2, new THREE.Vector3(-1.0, 0.0, 0.0));
+                airdrone.applyImpulse(vec3, new THREE.Vector3(0.0, -1.0, 0.0));
+                airdrone.applyImpulse(vec4, new THREE.Vector3(0.0, 1.0, 0.0));
             }
 
             function descent(event)
             {
-                aridroneAscent = false;
+                aridroneApplyImpulse = false;
                 dir = 0;
             }
 
             function ascent(event)
             {
-                aridroneAscent = true;
+                aridroneApplyImpulse = true;
                 switch (event.keyCode)
                 {
                     case 65:
