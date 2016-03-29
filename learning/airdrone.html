@@ -110,19 +110,19 @@
                         {
                             case 1:
                                 airdrone.position.x += 0.05;
-                                airdrone.rotation.y = 0.01;
+                                airdrone.rotation.y = 0.1;
                             break;
                             case 2:
                                 airdrone.position.x -= 0.05;
-                                airdrone.rotation.y = -0.01;
+                                airdrone.rotation.y = -0.1;
                             break;
                             case 3:
                                 airdrone.position.y += 0.05;
-                                airdrone.rotation.x = -0.01;
+                                airdrone.rotation.x = -0.1;
                             break;
                             case 4:
                                 airdrone.position.y -= 0.05;
-                                airdrone.rotation.x = 0.01;
+                                airdrone.rotation.x = 0.1;
                             break;
                         }
                     }
@@ -135,6 +135,8 @@
                             airdrone.position.z -= 0.05;
                         }
                     }
+
+                    console.log(airdrone.position.x, airdrone.position.y, airdrone.position.z);
                 }
                 controls.update( deltaTime );
                 renderer.render( scene, camera );

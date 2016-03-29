@@ -134,8 +134,6 @@
                 var deltaTime = clock.getDelta();
                 if (airdrone)
                 {
-airdrone.position.z += 0.01;
-/*
                     if (airdrone.getLinearVelocity().z < 0)
                     {
                         var acc = 1 / (airdrone.position.z / 5);
@@ -151,7 +149,7 @@ airdrone.position.z += 0.01;
                             vec3.z += (dir == 3) ? 0.002 : 0.0;
                             vec4.z += (dir == 4) ? 0.002 : 0.0;
                         }
-
+/*
 
                         if (airdrone.rotation.y < 0)
                         {
@@ -169,16 +167,16 @@ airdrone.position.z += 0.01;
                         {
                             vec4.z -= 0.001;
                         }
-
+*/
                         airdrone.applyImpulse(vec1, new THREE.Vector3(1.0, 0.0, 0.0));
                         airdrone.applyImpulse(vec2, new THREE.Vector3(-1.0, 0.0, 0.0));
                         airdrone.applyImpulse(vec3, new THREE.Vector3(0.0, -1.0, 0.0));
                         airdrone.applyImpulse(vec4, new THREE.Vector3(0.0, 1.0, 0.0));
                     }
-
+/*
                     vecC.x = airdrone.rotation.y / 10;
                     vecC.y = -airdrone.rotation.x / 10;
-                    //airdrone.applyImpulse(vecC, new THREE.Vector3(0.0, 0.0, 0.0));
+                    airdrone.applyImpulse(vecC, new THREE.Vector3(0.0, 0.0, 0.0));
 */
                 }
                 //stats.update();
