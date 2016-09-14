@@ -67,6 +67,8 @@
             } );
             console.log(object);
             scene.add( object );
+            var _object = object.getObjectByName("rightWheel", true);
+            _object.rotation.y += 0.1;
         } );
 
         grid = new THREE.GridHelper( 1.0, 10.0, 0x4a4a4a, 0x4a4a4a );
