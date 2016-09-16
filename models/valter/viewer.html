@@ -25,7 +25,6 @@
     <script src="https://cdn.rawgit.com/mrdoob/three.js/dev/examples/js/libs/dat.gui.min.js"></script>
     <script src="https://cdn.rawgit.com/mrdoob/three.js/dev/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdn.rawgit.com/mrdoob/three.js/dev/examples/js/Detector.js"></script>
-    <script type='text/javascript' src='tween.js'></script>
     <script>
 (function() {
 
@@ -40,8 +39,12 @@
     var scene, grid, camera;
 
     var gui, stats, app;
-    
-    var animLight, animPosition;
+
+    var loaded = false;
+
+    var rightWheel, leftWheel, wheelsAxis;
+
+    var wheelsAxis_rotation_y = 0;
 
     init();
 
@@ -62,34 +65,25 @@
         scene = new THREE.Scene();
         scene.fog = new THREE.FogExp2( 0x393939, 0.01 );
 
-        new THREE.ObjectLoader().load( OBJECT_FILE, function ( object ) {
+        var loader = new THREE.ObjectLoader();
+        loader.convertUpAxis = true;
+        loader.load( OBJECT_FILE, function ( object ) {
             object.traverse( function ( o ) {
                 if ( o.type == "Mesh" && o.material && ! o.material.transparent ) {
                     o.material.side = THREE.DoubleSide;
                 }
             } );
             console.log(object);
+
+
             scene.add( object );
-/*
-            var _object = object.getObjectByName("rightWheel", true);
-            _object.rotation.y += 0.1;
-*/
 
-			animLight = object.getObjectByName("rightWheel", true);//object.getObjectByName("Spot.001", true);
+            rightWheel = object.getObjectByName("rightWheel", true);
+            leftWheel  = object.getObjectByName("leftWheel", true);
+            wheelsAxis = object.getObjectByName("wheelsAxis", false);
+            wheelsAxis.prop = "My Property!";
 
-            var animation0 = object.animations[0];
-            var start = new THREE.Vector3(animation0.tracks[0].values[0], animation0.tracks[0].values[1], animation0.tracks[0].values[2]);
-            var end = new THREE.Vector3(animation0.tracks[0].values[3], animation0.tracks[0].values[4], animation0.tracks[0].values[5]);
-            animPosition = start;
-            var tween = new TWEEN.Tween(animPosition).to(end, animation0.tracks[0].times[1]*1000);
-            tween.onUpdate(function(){
-            	animLight.position.x = animPosition.x;
-            	animLight.position.y = animPosition.y;
-            	animLight.position.z = animPosition.z;
-            	animLight.rotation.z += 0.01;
-            });
-            tween.start();
-
+            loaded = true;
         } );
 
         grid = new THREE.GridHelper( 1.0, 10.0, 0x4a4a4a, 0x4a4a4a );
@@ -98,8 +92,9 @@
         grid.material.opacity = 0.85;
         scene.add( grid );
 
-        var ambientLight = new THREE.AmbientLight( 0x202020 );
-        scene.add( ambientLight );
+        var axisHelper = new THREE.AxisHelper( 0.5 );
+        scene.add( axisHelper );
+
 
         // Camera
 
@@ -124,11 +119,8 @@
         document.body.appendChild( gui.domElement );
 
         app = {
-        
             showGrid: gui.add( grid, 'visible').name( 'Show Grid' ).onChange( function() { needsUpdate = true; } ),
-            
             rotateCamera: gui.add( camera.controls, 'autoRotate').name( 'Rotate Camera' )
-
         };
 
         // Events
@@ -140,22 +132,37 @@
         renderer.domElement.addEventListener( 'mousedown', onMouseDown, false );
 
     }
-    
+
+    // Rotate an object around an arbitrary axis in world space       
+    function rotateAroundWorldAxis(object, axis, radians) {
+        var rotWorldMatrix = new THREE.Matrix4();
+        rotWorldMatrix.makeRotationAxis(axis.normalize(), radians);
+        rotWorldMatrix.multiplySelf(object.matrix);        // pre-multiply
+        object.matrix = rotWorldMatrix;
+        object.rotation.getRotationFromMatrix(object.matrix, object.scale);
+    }
+
     function animate() {
 
         stats.begin();
 
-        TWEEN.update();
-        
         requestAnimationFrame( animate );
 
         camera.controls.update();
+
+        if (loaded === true)
+        {
+            rightWheel.rotation.z -= 0.01;
+            leftWheel.rotation.z  -= 0.01;
+            wheelsAxis_rotation_y += 0.006;
+            wheelsAxis.rotation.set( 0, wheelsAxis_rotation_y, 0, 'XYZ' );
+        }
 
         if ( needsUpdate === true ) {
 
             render();
 
-            needsUpdate = false;
+            //needsUpdate = false;
 
         }
 
