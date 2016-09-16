@@ -25,6 +25,7 @@
     <script src="https://cdn.rawgit.com/mrdoob/three.js/dev/examples/js/libs/dat.gui.min.js"></script>
     <script src="https://cdn.rawgit.com/mrdoob/three.js/dev/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdn.rawgit.com/mrdoob/three.js/dev/examples/js/Detector.js"></script>
+    <script type='text/javascript' src='tween.js'></script>
     <script>
 (function() {
 
@@ -39,6 +40,8 @@
     var scene, grid, camera;
 
     var gui, stats, app;
+    
+    var animLight, animPosition;
 
     init();
 
@@ -71,6 +74,22 @@
             var _object = object.getObjectByName("rightWheel", true);
             _object.rotation.y += 0.1;
 */
+
+			animLight = object.getObjectByName("rightWheel", true);//object.getObjectByName("Spot.001", true);
+
+            var animation0 = object.animations[0];
+            var start = new THREE.Vector3(animation0.tracks[0].values[0], animation0.tracks[0].values[1], animation0.tracks[0].values[2]);
+            var end = new THREE.Vector3(animation0.tracks[0].values[3], animation0.tracks[0].values[4], animation0.tracks[0].values[5]);
+            animPosition = start;
+            var tween = new TWEEN.Tween(animPosition).to(end, animation0.tracks[0].times[1]*1000);
+            tween.onUpdate(function(){
+            	animLight.position.x = animPosition.x;
+            	animLight.position.y = animPosition.y;
+            	animLight.position.z = animPosition.z;
+            	animLight.rotation.z += 0.01;
+            });
+            tween.start();
+
         } );
 
         grid = new THREE.GridHelper( 1.0, 10.0, 0x4a4a4a, 0x4a4a4a );
@@ -126,6 +145,8 @@
 
         stats.begin();
 
+        TWEEN.update();
+        
         requestAnimationFrame( animate );
 
         camera.controls.update();
