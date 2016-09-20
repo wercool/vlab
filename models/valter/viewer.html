@@ -62,12 +62,14 @@
 
         // Scene
 
+
         scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2( 0x393939, 0.01 );
+
+//        scene.fog = new THREE.FogExp2( 0x393939, 0.01 );
 
         var light = new THREE.AmbientLight( 0x404040 ); // soft white light
         scene.add( light );
-        
+
         var loader = new THREE.ObjectLoader();
         loader.convertUpAxis = true;
         loader.load( OBJECT_FILE, function ( object ) {
@@ -97,7 +99,7 @@
         grid.material.opacity = 0.85;
         scene.add( grid );
 
-        var axisHelper = new THREE.AxisHelper( 0.5 );
+        var axisHelper = new THREE.AxisHelper( 2.0 );
         scene.add( axisHelper );
 
 
