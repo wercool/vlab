@@ -106,7 +106,7 @@
         // Camera
 
         camera = new THREE.PerspectiveCamera( FOVY, window.innerWidth / window.innerHeight, 0.5, 2000 );
-        camera.position.set( -1.0, 2.0, 17 );
+        camera.position.set( 0.0, 30.0, 30.0);
 
         camera.controls = new THREE.OrbitControls( camera, renderer.domElement );
         camera.controls.minDistance = 8;
